@@ -25,24 +25,9 @@ const startCaption = `😃 Здравствуйте!
 `;
 // START
 bot.start((ctx) => {
-  ctx.reply(
-    startCaption,
-    Markup.inlineKeyboard([
-      Markup.button.callback("Кнопка 1", "btn_1"),
-      Markup.button.callback("Кнопка 2", "btn_2")
-    ])
-  );
+  ctx.reply(startCaption);
 
   commandQueue = false;
-});
-
-bot.action("btn_1", (ctx) => {
-  ctx.reply("Вы нажали Кнопку 1");
-});
-
-// Обработка нажатия на кнопку 2
-bot.action("btn_2", (ctx) => {
-  ctx.reply("Вы нажали Кнопку 2");
 });
 
 // COMMANDS
