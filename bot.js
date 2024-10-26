@@ -5,6 +5,9 @@ import generatePDF, { getPDF } from "./pdf_generator.js";
 import readTable from "./table_reader.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import auth from "./auth.js";
+// DB
+import { addUser, findUserById } from "./db.js";
 
 // Functions
 // Функция для получения пути файла PhotoPath
@@ -13,18 +16,41 @@ function pp(filename) {
 }
 
 // Settings =============================>
-const pe = process.env;
-const bot = new Telegraf(pe.BEQU);
-let commandQueue = false;
-const startCaption = `😃 Здравствуйте!
+let FgYellow = "\x1b[33m%s\x1b[0m";
 
-Беку-бот к вашим услугам😊:
+const pe = process.env;
+const token = pe.APP_TYPE === "dev" ? pe.DEV : pe.PROD;
+const bot = new Telegraf(token);
+let commandQueue = false;
+const startCaption = `Беку-бот к вашим услугам😊:
 
 /shk - создать .pdf этикетки из ШК коробок
 /subscribe - в разработке...
 `;
+
 // START
+console.log("App is running...");
+if (pe.APP_TYPE === "dev") {
+  console.log(FgYellow, "Dev mode!");
+}
+
+// Дальнейший код бота, где используется token
+
 bot.start((ctx) => {
+  const { id, first_name, username } = ctx.from;
+  // DB
+  if (!findUserById(id)) {
+    addUser(ctx.from);
+  }
+
+  const messageText = ctx.message.text;
+
+  ctx.reply(
+    `😃 Привет, ${first_name}
+
+${messageText}`
+  );
+
   ctx.reply(startCaption);
 
   commandQueue = false;
@@ -61,9 +87,7 @@ bot.on("message", async (ctx) => {
         // Чтение таблицы
         const table = readTable(buffer);
 
-        let res = `Кол-во строк: ${table.length}
-        
-        Ожидайте...`;
+        let res = `Кол-во строк: ${table.length}\n\nОжидайте...`;
         ctx.reply(res);
         const sticWaitHamster =
           "CAACAgIAAxkBAAN6ZxMV75k-n9lFqkJZzfLo0_4tV4YAApYWAALCy_BIaXZUZ53X0Ys2BA";

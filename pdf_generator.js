@@ -19,10 +19,6 @@ export default async function generatePDF(data) {
     doc.setFont("RobotoRegular");
 
     let margin = 4;
-    // Left top
-    let lt = { x: -0.4 + margin, y: 4 + margin };
-    let rt = { x: 40 - margin, y: 4 + margin };
-    let lb = { x: -0.4 + margin, y: 58 - margin };
 
     // Top-left text (Размер)
     doc.text(`${el["Размер"]}`, 4, 10);
@@ -38,8 +34,8 @@ export default async function generatePDF(data) {
 
     // Bottom-left text (Артикул)
     const maxWidth = 40 - margin - 2;
-    const txtArticel = `${el["Артикул"]}`.substring(0, 20);
-    doc.text(doc.splitTextToSize(txtArticel, maxWidth), 4, 58 - margin);
+    const txtArticel = `${el["Артикул"]}`.substring(0, 30);
+    doc.text(doc.splitTextToSize(txtArticel, maxWidth), 4, 54 - margin);
 
     // Если это не последний элемент, добавить новую страницу
     if (data.indexOf(el) !== data.length - 1) {

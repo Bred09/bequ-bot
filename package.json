@@ -1,11 +1,11 @@
 {
-  "name": "shkgenjs",
+  "name": "bequ_bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "bot.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon bot.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "app": "nodemon",
+    "test": "echo 'TEST mode'"
   },
   "author": "Bek",
   "license": "ISC",
