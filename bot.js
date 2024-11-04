@@ -9,6 +9,21 @@ import auth from "./auth.js";
 // DB
 import { addUser, findUserById } from "./db.js";
 
+// Settings =========>
+const pe = process.env;
+const token = pe.APP_TYPE === "dev" ? pe.DEV : pe.PROD;
+const bot = new Telegraf(token);
+
+// Terminal styles
+const FgYellow = "\x1b[33m%s\x1b[0m";
+
+// Stickers [sticker id = ctx.message.sticker.file_id]
+const sticGuineaPig =
+  "CAACAgIAAxkBAAN6ZxMV75k-n9lFqkJZzfLo0_4tV4YAApYWAALCy_BIaXZUZ53X0Ys2BA";
+const sticHamsterBanana =
+  "CAACAgIAAxkBAAOlZyQ5suljzEX517ED44lOxjNDK9cAAhJkAAKwcSBJYtzrlvYnfHA2BA";
+// Settings =========<
+
 // Functions
 // Функция для получения пути файла PhotoPath
 function pp(filename) {
@@ -16,15 +31,14 @@ function pp(filename) {
 }
 
 // Print SHK boxs
-function printSHK(ctx) {
-  // Generate .PDF proccess
+async function printSHK(ctx) {
   try {
-    const file_id = ctx.message.document.file_id;
-    const fileLink = ctx.telegram.getFileLink(file_id);
+    const file_id = await ctx.message.document.file_id;
+    const fileLink = await ctx.telegram.getFileLink(file_id);
 
     // Получение файла в виде буфера
-    const response = fetch(fileLink);
-    const arrayBuffer = response.arrayBuffer();
+    const response = await fetch(fileLink);
+    const arrayBuffer = await response.arrayBuffer();
 
     // Преобразование ArrayBuffer в Buffer
     const buffer = Buffer.from(arrayBuffer);
@@ -42,7 +56,7 @@ function printSHK(ctx) {
     ctx.replyWithSticker(sticGuineaPig);
 
     // Генерация PDF
-    const pdfBuffer = generatePDF(table);
+    const pdfBuffer = await generatePDF(table);
 
     // Преобразование ArrayBuffer PDF в Buffer
     const pdfFile = Buffer.from(pdfBuffer);
@@ -51,7 +65,7 @@ function printSHK(ctx) {
     ctx.replyWithDocument(
       {
         source: pdfFile,
-        filename: "bequ_shk.pdf",
+        filename: "bequ_wb_bot.pdf",
       },
       { caption: "✅ Ваши этикетки готовы!" }
     );
@@ -65,24 +79,7 @@ function printSHK(ctx) {
   }
 }
 
-// Settings =============================>
-let FgYellow = "\x1b[33m%s\x1b[0m";
-
-const pe = process.env;
-const token = pe.APP_TYPE === "dev" ? pe.DEV : pe.PROD;
-const bot = new Telegraf(token);
-// Stickers [sticker id = ctx.message.sticker.file_id]
-const sticGuineaPig =
-  "CAACAgIAAxkBAAN6ZxMV75k-n9lFqkJZzfLo0_4tV4YAApYWAALCy_BIaXZUZ53X0Ys2BA";
-const sticHamsterBanana =
-  "CAACAgIAAxkBAAOlZyQ5suljzEX517ED44lOxjNDK9cAAhJkAAKwcSBJYtzrlvYnfHA2BA";
-
 // START
-console.log("App is running...");
-if (pe.APP_TYPE === "dev") {
-  console.log(FgYellow, "Dev mode!");
-}
-
 bot.start((ctx) => {
   const { id, first_name, username } = ctx.from;
   // DB
@@ -93,39 +90,28 @@ bot.start((ctx) => {
   ctx.reply(
     `😃 Привет, ${first_name}
 
-/start - запустить/перезапустить бота
-/shk - создать .pdf этикетки до 1 000 шт.
-/subscribe - в разработке...
+Выбери команду /info чтобы открыть инструкции
+Отправь мне excel.xlsx файл и я напечатаю этикетки для WB
 `
   );
-
-  commandQueue = false;
 });
 
 // COMMANDS
-bot.on("message", async (ctx) => {
+bot.on("message", (ctx) => {
   const { id, first_name, username } = ctx.from;
-
-  let usersQueue = []
-  function ochered(userData){
-    usersQueue.push(userData)
-    console.log(usersQueue);
-    
-  }
 
   // Print .pdf
   if (
     ctx.message.document &&
     ctx.message.document.file_name.endsWith(".xlsx")
   ) {
-    ochered(id)
-
-    // return ctx.reply(printSHK(ctx));
+    printSHK(ctx);
   }
-
-  // Other
-  return ctx.reply("Что вы хотите сделать?");
 });
 
 // Start bot =============================>
 bot.launch();
+console.log("\nApp is running...");
+if (pe.APP_TYPE === "dev") {
+  console.log(FgYellow, "Dev mode!\n");
+}
