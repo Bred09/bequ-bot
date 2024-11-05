@@ -80,21 +80,38 @@ async function printSHK(ctx) {
 }
 
 // START
+// bot.start((ctx) => {
+//   const { id, first_name, username } = ctx.from;
+//   // DB
+//   if (!findUserById(id)) {
+//     addUser(ctx.from);
+//   }
+
+//   ctx.reply(
+//     `😃 Привет, ${first_name}
+
+// Выбери команду /info чтобы открыть инструкции
+// Отправь мне excel.xlsx файл и я напечатаю этикетки для WB
+// `
+//   );
+// });
+
 bot.start((ctx) => {
-  const { id, first_name, username } = ctx.from;
-  // DB
-  if (!findUserById(id)) {
-    addUser(ctx.from);
-  }
-
   ctx.reply(
-    `😃 Привет, ${first_name}
-
-Выбери команду /info чтобы открыть инструкции
-Отправь мне excel.xlsx файл и я напечатаю этикетки для WB
-`
+    'Пожалуйста, поделитесь своим номером телефона',
+    Markup.keyboard([
+      Markup.button.contactRequest('Отправить номер телефона')
+    ])
+    .resize()
+    .oneTime()
   );
 });
+
+bot.on('contact', (ctx) => {
+  const userPhoneNumber = ctx.message.contact.phone_number;
+  ctx.reply(`Спасибо! Ваш номер телефона: ${userPhoneNumber}`);
+});
+
 
 // COMMANDS
 bot.on("message", (ctx) => {
