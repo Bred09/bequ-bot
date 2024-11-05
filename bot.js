@@ -7,7 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import auth from "./auth.js";
 // DB
-import { addUser, findUserById } from "./db.js";
+import { addUser, findUserById, editUser } from "./db.js";
 
 // Settings =========>
 const pe = process.env;
@@ -96,26 +96,31 @@ async function printSHK(ctx) {
 //   );
 // });
 
-bot.start((ctx) => {
-  ctx.reply(
-    'Пожалуйста, поделитесь своим номером телефона',
-    Markup.keyboard([
-      Markup.button.contactRequest('Отправить номер телефона')
-    ])
-    .resize()
-    .oneTime()
-  );
-});
-
-bot.on('contact', (ctx) => {
-  const userPhoneNumber = ctx.message.contact.phone_number;
-  ctx.reply(`Спасибо! Ваш номер телефона: ${userPhoneNumber}`);
-});
+// bot.start((ctx) => {
+//   ctx.reply(
+//     'Пожалуйста, поделитесь своим номером телефона',
+//     Markup.keyboard([
+//       Markup.button.contactRequest('Отправить номер телефона')
+//     ])
+//     .resize()
+//     .oneTime()
+//   );
+// });
 
 
 // COMMANDS
 bot.on("message", (ctx) => {
   const { id, first_name, username } = ctx.from;
+
+  ctx.reply(
+    'Пожалуйста, поделитесь своим номером телефона',
+    Markup.keyboard([
+      Markup.button.contactRequest('Отправить номер телефона')
+    ])
+      .resize()
+      .oneTime()
+  );
+
 
   // Print .pdf
   if (
@@ -123,6 +128,11 @@ bot.on("message", (ctx) => {
     ctx.message.document.file_name.endsWith(".xlsx")
   ) {
     printSHK(ctx);
+  }
+  // Get contact
+  if (ctx.message.contact && ctx.message.contact.phone_number) {
+    ctx.reply("PHONE")
+    editUser(id, ctx.message.contact.phone_number)
   }
 });
 

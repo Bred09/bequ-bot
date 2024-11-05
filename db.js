@@ -26,7 +26,7 @@ const saveUsers = (users) => {
 // Функция для добавления нового пользователя
 export const addUser = (user) => {
   const users = loadUsers();
-  const newUser = { id: user.id, name: user.first_name, username: user.username };
+  const newUser = { id: user.id, name: user.first_name, username: user.username, phone: 0 };
   users.push(newUser);
   saveUsers(users);
   console.log(`User added: ${JSON.stringify(newUser)}`);
@@ -38,3 +38,10 @@ export const findUserById = (id) => {
   const user = users.find((user) => user.id === id);
   return user ? user : false;
 };
+
+export function editUser(userId, userValue) {
+  const users = loadUsers();
+  const user = users.find((user) => user.id === userId);
+  users.push(user.phone = userValue);
+  saveUsers(users)
+}
