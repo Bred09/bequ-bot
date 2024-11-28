@@ -26,7 +26,12 @@ const saveUsers = (users) => {
 // Функция для добавления нового пользователя
 export const addUser = (user) => {
   const users = loadUsers();
-  const newUser = { id: user.id, name: user.first_name, username: user.username, phone: 0 };
+  const newUser = {
+    id: user.id,
+    name: user.first_name,
+    username: user.username,
+    phone: 0,
+  };
   users.push(newUser);
   saveUsers(users);
   console.log(`User added: ${JSON.stringify(newUser)}`);
@@ -39,9 +44,44 @@ export const findUserById = (id) => {
   return user ? user : false;
 };
 
+// AUTH
+export const checkAuth = (id) => {
+  const users = loadUsers();
+  const user = users.find((user) => user.id === id && user.phone);
+  return user ? true : false;
+};
+
+// test
 export function editUser(userId, userValue) {
   const users = loadUsers();
   const user = users.find((user) => user.id === userId);
-  users.push(user.phone = userValue);
-  saveUsers(users)
+  users.push((user.phone = userValue));
+  saveUsers(users);
 }
+
+// == Add user Phone
+export const addUserPhone = (userId, userPhone) => {
+  try {
+    const users = loadUsers();
+
+    // Ищем пользователя в массиве
+    const userIndex = users.findIndex((user) => user.id === userId);
+
+    if (userIndex !== -1) {
+      // Если пользователь найден, проверяем, есть ли у него телефон
+      if (!users[userIndex].phone) {
+        users[userIndex].phone = userPhone; // Добавляем телефон, если его нет
+      }
+    } else {
+      // Если пользователь не найден, добавляем нового
+      users.push({ id: userId, phone: userPhone });
+    }
+
+    saveUsers(users); // Сохраняем обновлённый массив
+
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};

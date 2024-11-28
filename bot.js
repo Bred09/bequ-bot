@@ -1,18 +1,26 @@
 // IMPORTS =============================>
 import "dotenv/config";
 import { Markup, Telegraf } from "telegraf";
+import { message } from "telegraf/filters";
 import generatePDF, { getPDF } from "./pdf_generator.js";
 import readTable from "./table_reader.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import auth from "./auth.js";
 // DB
-import { addUser, findUserById, editUser } from "./db.js";
+import { addUser, findUserById, addUserPhone, checkAuth } from "./db.js";
 
 // Settings =========>
 const pe = process.env;
 const token = pe.APP_TYPE === "dev" ? pe.DEV : pe.PROD;
 const bot = new Telegraf(token);
+const helpCaption = `
+- Отправь мне таблицу эксель (.xlsx) и я напечатаю этикетки. Убедись, что он заполнен как в примере выше
+
+[📝 Шаблоны]
+/template - шаблон для этикеток коробов
+
+[⚠️ В разработке]
+/subscribe - подписаться на поставки`;
 
 // Terminal styles
 const FgYellow = "\x1b[33m%s\x1b[0m";
@@ -22,6 +30,8 @@ const sticGuineaPig =
   "CAACAgIAAxkBAAN6ZxMV75k-n9lFqkJZzfLo0_4tV4YAApYWAALCy_BIaXZUZ53X0Ys2BA";
 const sticHamsterBanana =
   "CAACAgIAAxkBAAOlZyQ5suljzEX517ED44lOxjNDK9cAAhJkAAKwcSBJYtzrlvYnfHA2BA";
+const sticStop =
+  "CAACAgIAAxkBAAID12dGD1HcLrSIkMy7ILmBT_brOEusAAJoEQAC9r6hS93yOBQEg8-JNgQ";
 // Settings =========<
 
 // Functions
@@ -47,13 +57,12 @@ async function printSHK(ctx) {
     const table = readTable(buffer);
 
     if (table.length > 1000) {
-      ctx.reply("⚠️ В файле больше 1000 строк");
-      return ctx.replyWithSticker(sticHamsterBanana);
+      await ctx.replyWithSticker(sticHamsterBanana);
+      return ctx.reply("⚠️ В файле больше 1000 строк");
     }
 
-    let res = `Кол-во строк: ${table.length}\n\nОжидайте...`;
-    ctx.reply(res);
-    ctx.replyWithSticker(sticGuineaPig);
+    await ctx.replyWithSticker(sticGuineaPig);
+    ctx.reply(`Кол-во строк: ${table.length}\n\nОжидайте...`);
 
     // Генерация PDF
     const pdfBuffer = await generatePDF(table);
@@ -67,61 +76,91 @@ async function printSHK(ctx) {
         source: pdfFile,
         filename: "bequ_wb_bot.pdf",
       },
-      { caption: "✅ Ваши этикетки готовы!" }
+      { caption: "✅ Этикетки готовы!" }
     );
-  } catch (error) {
-    const startCaption =
-      "⛔️ Не удалось обработать файл. Убедитесь, что он заполнен как в примере выше";
-    const photoPath = pp("img/example.png");
 
-    ctx.replyWithPhoto({ source: photoPath }, { caption: startCaption });
+    return;
+  } catch (error) {
+    ctx.reply(
+      "⛔️ Не удалось обработать файл. Убедись, что он заполнен по инструкции /help"
+    );
     console.error(error);
   }
 }
 
 // START
-// bot.start((ctx) => {
-//   const { id, first_name, username } = ctx.from;
-//   // DB
-//   if (!findUserById(id)) {
-//     addUser(ctx.from);
-//   }
-
-//   ctx.reply(
-//     `😃 Привет, ${first_name}
-
-// Выбери команду /info чтобы открыть инструкции
-// Отправь мне excel.xlsx файл и я напечатаю этикетки для WB
-// `
-//   );
-// });
-
-// bot.start((ctx) => {
-//   ctx.reply(
-//     'Пожалуйста, поделитесь своим номером телефона',
-//     Markup.keyboard([
-//       Markup.button.contactRequest('Отправить номер телефона')
-//     ])
-//     .resize()
-//     .oneTime()
-//   );
-// });
-
-
-// COMMANDS
-bot.on("message", (ctx) => {
+bot.start((ctx) => {
   const { id, first_name, username } = ctx.from;
 
   ctx.reply(
-    'Пожалуйста, поделитесь своим номером телефона',
-    Markup.keyboard([
-      Markup.button.contactRequest('Отправить номер телефона')
-    ])
-      .resize()
-      .oneTime()
+    `Привет, ${first_name}
+
+Выбери команду /help чтобы открыть инструкции
+Отправь мне заполненный файл поставки, а дальше я все улажу сам 😁
+`
   );
+});
 
+// COMMANDS
+// Get sticker ID
+// bot.on(message('sticker'), (ctx) => ctx.reply(ctx.message.sticker.file_id))
 
+// Get contact
+bot.on(message("contact"), (ctx) => {
+  const addUserPhoneResult = addUserPhone(
+    ctx.from.id,
+    ctx.message.contact.phone_number
+  );
+  if (addUserPhoneResult) {
+    ctx.reply("✅ Номер подтвержден!");
+  } else {
+    ctx.reply("❌ не удалось подтвердить номер. Связаться с админом @");
+  }
+});
+
+bot.help((ctx) => {
+  const photoPath = pp("src/imgs/example.png");
+
+  ctx.replyWithPhoto({ source: photoPath }, { caption: helpCaption });
+});
+
+bot.command("template", (ctx) => {
+  const filePath = pp("src/docs/template.xlsx");
+
+  return ctx.replyWithDocument({ source: filePath }).catch((error) => {
+    console.error("Ошибка при отправке файла:", error);
+    ctx.reply("Не удалось передать шаблон.");
+  });
+});
+
+bot.on("message", async (ctx) => {
+  const { id, first_name, username } = ctx.from;
+  console.log(`User: ${id}, ${first_name}, ${username}`);
+
+  
+  // Check user
+  if (!findUserById(id)) {
+    addUser(ctx.from);
+  }
+  // Check auth =========>
+  const checkAuthResult = checkAuth(ctx.from.id);
+  console.log(checkAuthResult);
+
+  if (!checkAuthResult) {
+    await ctx.replyWithSticker(sticStop);
+    ctx.reply(
+      "⛔️ Пожалуйста, поподтверди личность отправив свой номер телефона",
+      Markup.keyboard([
+        Markup.button.contactRequest("Отправить номер телефона"),
+      ])
+        .resize()
+        .oneTime()
+    );
+
+    return;
+  }
+
+  // После проверки авторизации
   // Print .pdf
   if (
     ctx.message.document &&
@@ -129,11 +168,8 @@ bot.on("message", (ctx) => {
   ) {
     printSHK(ctx);
   }
-  // Get contact
-  if (ctx.message.contact && ctx.message.contact.phone_number) {
-    ctx.reply("PHONE")
-    editUser(id, ctx.message.contact.phone_number)
-  }
+
+  return ctx.reply("Выбери действие");
 });
 
 // Start bot =============================>
