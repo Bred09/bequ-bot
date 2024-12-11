@@ -12,8 +12,6 @@ import { addUser, findUserById, addUserPhone, checkAuth } from "./db.js";
 // Settings =========>
 const pe = process.env;
 const token = pe.npm_lifecycle_event === "dev" ? pe.DEV : pe.PROD;
-console.log(token);
-console.log(pe.npm_lifecycle_event);
 
 const bot = new Telegraf(token);
 const helpCaption = `
@@ -169,10 +167,10 @@ bot.on("message", async (ctx) => {
     ctx.message.document &&
     ctx.message.document.file_name.endsWith(".xlsx")
   ) {
-    printSHK(ctx);
+    return printSHK(ctx);
   }
 
-  return ctx.reply("Выбери действие");
+  ctx.reply("Выбери действие");
 });
 
 // Start bot =============================>
