@@ -4,7 +4,8 @@
   "main": "bot.js",
   "type": "module",
   "scripts": {
-    "app": "nodemon",
+    "prod": "node bot",
+    "dev": "nodemon",
     "test": "echo 'TEST mode'"
   },
   "author": "Bek",

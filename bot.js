@@ -11,7 +11,10 @@ import { addUser, findUserById, addUserPhone, checkAuth } from "./db.js";
 
 // Settings =========>
 const pe = process.env;
-const token = pe.APP_TYPE === "dev" ? pe.DEV : pe.PROD;
+const token = pe.npm_lifecycle_event === "dev" ? pe.DEV : pe.PROD;
+console.log(token);
+console.log(pe.npm_lifecycle_event);
+
 const bot = new Telegraf(token);
 const helpCaption = `
 - Отправь мне таблицу эксель (.xlsx) и я напечатаю этикетки. Убедись, что он заполнен как в примере выше
@@ -175,6 +178,6 @@ bot.on("message", async (ctx) => {
 // Start bot =============================>
 bot.launch();
 console.log("\nApp is running...");
-if (pe.APP_TYPE === "dev") {
+if (pe.npm_lifecycle_event === "dev") {
   console.log(FgYellow, "Dev mode!\n");
 }
